@@ -10,7 +10,7 @@ Project Name
 ├── 📁 notebooks         # Jupyter notebooks for analysis and experimentation
 │
 ├── 📁 src                # Source code and scripts
-│   ├── 📁 data           # Data preprocessing scripts
+│   ├── 📁 components     # Data preprocessing scripts
 │   ├── 📁 models         # Model architecture and training code
 │   ├── 📁 utils          # Utility functions and helper scripts
 │   ├── 📜 main.py        # Main script or entry point
