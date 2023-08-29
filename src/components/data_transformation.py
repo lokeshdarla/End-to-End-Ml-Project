@@ -30,8 +30,8 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
         else:
             return np.c_[X, rooms_per_household, population_per_household]
         
-housing=pd.read_csv(data_dir)
-
+df=pd.read_csv(data_dir)
+housing = df.drop("median_house_value", axis=1)
 housing_num =housing.drop('ocean_proximity',axis=1)
 
 num_pipeline=Pipeline([
