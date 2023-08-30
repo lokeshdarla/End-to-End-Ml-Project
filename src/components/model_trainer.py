@@ -2,7 +2,6 @@ import os
 import sys
 from dataclasses import dataclass
 
-from catboost import CatBoostClassifier
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.linear_model import LinearRegression
 from sklearn.metrics import r2_score
