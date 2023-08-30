@@ -1,20 +1,23 @@
+import sys
+from dataclasses import dataclass
 import numpy as np
 import pandas as pd
-import os
-
-
-script_dir = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(script_dir, '..', '..', 'data/preprocessed_data/train.csv')
-
-from sklearn.preprocessing import StandardScaler
-from sklearn.impute import SimpleImputer
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
-from sklearn.base import BaseEstimator, TransformerMixin
-import joblib
+from sklearn.impute import SimpleImputer
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import OneHotEncoder, StandardScaler
+from src.exception import CustomException
+from src.logger import logging
+import os
+from src.utils import save_object
+
+
 rooms_ix, bedrooms_ix, population_ix, households_ix = 3, 4, 5, 6
 
+@dataclass
+class DataTransformationConfig:
+    preprocessor_obj_file_path = os.path.join('artifacts', 'proprocessor.pkl')
+    
 class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
     def __init__(self, add_bedrooms_per_room = True):
         self.add_bedrooms_per_room = add_bedrooms_per_room
@@ -29,31 +32,92 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
              bedrooms_per_room]
         else:
             return np.c_[X, rooms_per_household, population_per_household]
-        
-df=pd.read_csv(data_dir,index_col=0)
-housing = df.drop("median_house_value", axis=1)
-housing_num =housing.drop('ocean_proximity',axis=1)
 
-num_pipeline=Pipeline([
-    ('imputer',SimpleImputer(strategy='median')),
-    ('attrib_adder',CombinedAttributesAdder()),
-    ('scaler',StandardScaler())
-    
-])
+class DataTransformation:
+    def __init__(self):
+        self.data_transformation_config = DataTransformationConfig()
 
-num_attribs = list(housing_num)
-cat_attribs = ["ocean_proximity"]
+    def get_data_transformer_object(self):
+        try:
+            numerical_columns = ["longitude", "latitude", "housing_median_age", "total_rooms",
+                                "total_bedrooms", "population", "households", "median_income"]
+            categorical_columns = [
+                "ocean_proximity"
+            ]
 
-full_pipeline=ColumnTransformer([
-    ("num",num_pipeline,num_attribs),
-    ("cat",OneHotEncoder(),cat_attribs)
-])
+            num_pipeline = Pipeline(
+                steps=[
+                    ('imputer',SimpleImputer(strategy='median')),
+                    ('attrib_adder',CombinedAttributesAdder()),
+                    ('scaler',StandardScaler())
+                ]
+            )
 
 
-# Build the path to the models directory
-models_dir = os.path.join(script_dir, '..', '..', 'models')
+            cat_pipeline = Pipeline(
+                steps=[
+                    ("one_hot_encoder", OneHotEncoder())
+                ]
+            )
 
-# Create the full path for saving the pipeline
+            logging.info(f"Categorical columns: {categorical_columns}")
+            logging.info(f"Numerical columns: {numerical_columns}")
 
-pipeline_path = os.path.join(models_dir, 'preprocessing_pipeline.pkl')
-joblib.dump(full_pipeline, pipeline_path)
+            preprocessor = ColumnTransformer(
+                [
+                    ("num_pipeline", num_pipeline, numerical_columns),
+                    ("cat_pipelines", cat_pipeline, categorical_columns)
+                ]
+            )
+
+            return preprocessor
+
+        except Exception as e:
+            raise CustomException(e, sys)
+
+    def initiate_data_transformation(self, train_path, test_path):
+        try:
+            train_df = pd.read_csv(train_path)
+            test_df = pd.read_csv(test_path)
+
+            logging.info("Read train and test data completed")
+            logging.info("Obtaining preprocessing object")
+
+            preprocessing_obj = self.get_data_transformer_object()
+
+            target_column_name = "math_score"
+            numerical_columns = ["writing_score", "reading_score"]
+
+            input_feature_train_df = train_df.drop(columns=[target_column_name], axis=1)
+            target_feature_train_df = train_df[target_column_name]
+
+            input_feature_test_df = test_df.drop(columns=[target_column_name], axis=1)
+            target_feature_test_df = test_df[target_column_name]
+
+            logging.info(
+                "Applying preprocessing object on training dataframe and testing dataframe."
+            )
+
+            input_feature_train_arr = preprocessing_obj.fit_transform(input_feature_train_df)
+            input_feature_test_arr = preprocessing_obj.transform(input_feature_test_df)
+
+            train_arr = np.c_[
+                input_feature_train_arr, np.array(target_feature_train_df)
+            ]
+            test_arr = np.c_[input_feature_test_arr, np.array(target_feature_test_df)]
+
+            logging.info("Saved preprocessing object.")
+
+            save_object(
+                file_path=self.data_transformation_config.preprocessor_obj_file_path,
+                obj=preprocessing_obj
+            )
+
+            return (
+                train_arr,
+                test_arr,
+                self.data_transformation_config.preprocessor_obj_file_path,
+            )
+
+        except Exception as e:
+            raise CustomException(e, sys)
