@@ -7,6 +7,7 @@ from dataclasses import dataclass
 
 from src.components.data_transformation import DataTransformation
 from src.components.data_transformation import DataTransformationConfig
+from src.components.model_trainer import ModelTrainerConfig,ModelTrainer
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(message)s")
@@ -66,4 +67,7 @@ if __name__ == "__main__":
     train_path,test_path=obj.initiate_data_ingestion()
     
     data_transformation=DataTransformation()
-    data_transformation.initiate_data_transformation(train_path,test_path)
+    train_array,test_array,preprocessed_path=data_transformation.initiate_data_transformation(train_path,test_path)
+
+    model_trainer=ModelTrainer()
+    model_trainer.initiate_model_trainer(train_array=train_array,test_array=test_array)
