@@ -17,7 +17,7 @@ from src.exception import CustomException
 
 # Path to the CSV data file
 script_dir = os.path.dirname(os.path.abspath(__file__))
-data_dir = os.path.join(script_dir, '..', '..', 'data', 'preprocessed_data', 'housing.csv')
+data_dir = os.path.join(script_dir, '..', '..', 'data', 'raw', 'housing.csv')
 
 # Data class for configuration
 @dataclass
