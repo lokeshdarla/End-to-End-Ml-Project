@@ -13,7 +13,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.compose import ColumnTransformer
 from sklearn.base import BaseEstimator, TransformerMixin
 import joblib
-rooms_ix, bedrooms_ix, population_ix, households_ix = 4, 5, 6, 7
+rooms_ix, bedrooms_ix, population_ix, households_ix = 3, 4, 5, 6
 
 class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
     def __init__(self, add_bedrooms_per_room = True):
@@ -30,7 +30,7 @@ class CombinedAttributesAdder(BaseEstimator, TransformerMixin):
         else:
             return np.c_[X, rooms_per_household, population_per_household]
         
-df=pd.read_csv(data_dir)
+df=pd.read_csv(data_dir,index_col=0)
 housing = df.drop("median_house_value", axis=1)
 housing_num =housing.drop('ocean_proximity',axis=1)
 
