@@ -15,7 +15,7 @@ class PredictionPipeline:
             model=load_object(file_path=model_path)
             preprocessor=load_object(file_path=preprocessor_path)
             logging.info("After loading")
-            data_scaled=preprocessor.transform()
+            data_scaled=preprocessor.transform(features)
             predictions=model.predict(data_scaled)
             logging.info("Prediction completed")
             return predictions

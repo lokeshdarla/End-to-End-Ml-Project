@@ -1,57 +1,38 @@
 import streamlit as st
-from src.pipeline.predict_pipeline import CustomData, PredictionPipeline
+import pandas as pd
+import sys
+from src.exception import CustomException
+from src.utils import load_object
+from src.logger import logging
+from src.pipeline.predict_pipeline import PredictionPipeline, CustomData  # Import the PredictionPipeline and CustomData classes
 
 def main():
-    st.title("California House Prediction")
-    
-    # Create input elements
-    latitude = st.number_input("Enter Latitude:", value=0.0)
-    longitude = st.number_input("Enter Longitude:", value=0.0)
-    housing_median_age = st.slider("Housing Median Age:", 0, 100, 50)
-    total_rooms = st.number_input("Total Rooms:", value=0)
-    total_bedrooms = st.number_input("Total Bedrooms:", value=0)
-    population = st.number_input("Population:", value=0)
-    households = st.number_input("Households:", value=0)
-    median_income = st.number_input("Median Income:", value=0.0)
-    ocean_proximity = st.selectbox("Ocean Proximity:", ["<Select>", "Near Bay", "Inland", "Ocean", "Near Ocean"])
+    st.title('California House Price Prediction')
 
-    # Sidebar description
-    st.sidebar.header("Description")
-    st.sidebar.write("Made using Hands-On Machine Learning with Scikit-Learn book as reference")
+    # Sidebar input fields
+    longitude = st.sidebar.number_input('Longitude', value=0.0, step=0.01)
+    latitude = st.sidebar.number_input('Latitude', value=0.0, step=0.01)
+    housing_median_age = st.sidebar.number_input('Housing Median Age', value=0, step=1)
+    total_rooms = st.sidebar.number_input('Total Rooms', value=0, step=1)
+    total_bedrooms = st.sidebar.number_input('Total Bedrooms', value=0, step=1)
+    population = st.sidebar.number_input('Population', value=0, step=1)
+    households = st.sidebar.number_input('Households', value=0, step=1)
+    median_income = st.sidebar.number_input('Median Income', value=0.0, step=0.01)
+    ocean_proximity = st.sidebar.selectbox('Ocean Proximity', ['<1H OCEAN', 'INLAND', 'ISLAND', 'NEAR BAY', 'NEAR OCEAN'])
 
-    # Check if the user has provided all required inputs
-    if st.button("Submit"):
-        if (
-            longitude != 0.0
-            and latitude != 0.0
-            and housing_median_age != 50
-            and total_rooms != 0
-            and total_bedrooms != 0
-            and population != 0
-            and households != 0
-            and median_income != 0.0
-            and ocean_proximity != "<Select>"
-        ):
-            # Create a CustomData object with user input
-            custom_data = CustomData(
-                longitude=longitude,
-                latitude=latitude,
-                housing_median_age=housing_median_age,
-                total_rooms=total_rooms,
-                total_bedrooms=total_bedrooms,
-                population=population,
-                households=households,
-                median_income=median_income,
-                ocean_proximity=ocean_proximity
-            )
-            
-            # Example: You can use the custom_data object in your prediction pipeline
-            prediction_pipeline = PredictionPipeline()
-            predictions = prediction_pipeline.predict(custom_data)
-            
-            st.success("Input submitted successfully! You can process it further in your prediction pipeline.")
-        else:
-            st.error("Please provide all required inputs.")
+    custom_data = CustomData(longitude, latitude, housing_median_age, total_rooms, total_bedrooms,
+                            population, households, median_income, ocean_proximity)
 
-if __name__ == "__main__":
+    if st.sidebar.button('Predict'):
+        prediction_pipeline = PredictionPipeline()
+        input_data = custom_data.get_data_as_dataframe()
+
+        try:
+            predictions = prediction_pipeline.predict(input_data)
+            st.subheader('House Price Prediction')
+            st.write(f'Predicted House Price: ${predictions[0]:,.2f}')
+        except Exception as e:
+            CustomException(e, sys)
+
+if __name__ == '__main__':
     main()
